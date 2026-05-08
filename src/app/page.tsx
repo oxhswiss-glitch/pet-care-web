@@ -7,6 +7,96 @@ import {
 } from 'lucide-react';
 
 /* =========================================
+   ANIMATION HOOK (Intersection Observer)
+========================================= */
+function useInView<T extends HTMLElement>(options?: IntersectionObserverInit) {
+  const ref = useRef<T>(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setInView(true);
+    }, { threshold: 0.1, ...options });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return { ref, inView };
+}
+
+/* =========================================
+   ANIMATED SECTION WRAPPER
+========================================= */
+function AnimatedSection({
+  children,
+  className = '',
+  delay = 0,
+  direction = 'up',
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+  direction?: 'up' | 'down' | 'left' | 'right';
+}) {
+  const { ref, inView } = useInView<HTMLDivElement>();
+
+  const dirMap = {
+    up: 'translate-y-8',
+    down: '-translate-y-8',
+    left: 'translate-x-8',
+    right: '-translate-x-8',
+  };
+
+  return (
+    <div
+      ref={ref}
+      className={`transition-all duration-700 ease-out ${className} ${
+        inView
+          ? 'opacity-100 translate-x-0 translate-y-0'
+          : `opacity-0 ${dirMap[direction]}`
+      }`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* =========================================
+   STAGGERED CHILDREN
+========================================= */
+function StaggerContainer({
+  children,
+  className = '',
+  staggerDelay = 100,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  staggerDelay?: number;
+}) {
+  const { ref, inView } = useInView<HTMLDivElement>();
+  const count = React.Children.count(children);
+
+  return (
+    <div ref={ref} className={className}>
+      {React.Children.map(children, (child, i) => (
+        <div
+          key={i}
+          className={`transition-all duration-700 ease-out ${
+            inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+          }`}
+          style={{ transitionDelay: `${i * staggerDelay}ms` }}
+        >
+          {child}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* =========================================
    ICONOS SVG INLINE
 ========================================= */
 function IconInstagram({ size = 18 }: { size?: number }) {
@@ -39,6 +129,43 @@ function IconDoorOpen({ size = 28 }: { size?: number }) {
 }
 
 /* =========================================
+   PAGE LOADER
+========================================= */
+function PageLoader({ onDone }: { onDone: () => void }) {
+  const [progress, setProgress] = useState(0);
+  const [hiding, setHiding] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setProgress((p) => {
+        if (p >= 100) {
+          clearInterval(interval);
+          setTimeout(() => setHiding(true), 200);
+          setTimeout(() => onDone(), 900);
+          return 100;
+        }
+        return Math.min(p + Math.random() * 18 + 6, 100);
+      });
+    }, 100);
+    return () => clearInterval(interval);
+  }, [onDone]);
+
+  return (
+    <div
+      className={`fixed inset-0 z-[100] bg-[#1B3A2D] flex flex-col items-center justify-center transition-opacity duration-700 ease-out ${
+        hiding ? 'opacity-0 pointer-events-none' : 'opacity-100'
+      }`}
+    >
+      <div className="font-[family-name:var(--font-playfair)] text-3xl text-[#C9A84C] mb-6 tracking-wide">PetCare</div>
+      <div className="w-48 h-[2px] bg-[#F7F2E9]/10 rounded-full overflow-hidden">
+        <div className="h-full bg-[#C9A84C] transition-all duration-200 ease-out" style={{ width: `${Math.min(progress, 100)}%` }} />
+      </div>
+      <p className="mt-4 text-xs text-[#F7F2E9]/40 uppercase tracking-[0.3em]">Cargando experiencia</p>
+    </div>
+  );
+}
+
+/* =========================================
    NAVBAR
 ========================================= */
 function Navbar() {
@@ -63,9 +190,7 @@ function Navbar() {
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm' : 'bg-transparent'}`}>
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
         <a href="#" className="flex items-center gap-2">
-          <span className={`text-xl font-[family-name:var(--font-playfair)] font-bold transition-colors duration-300 ${scrolled ? 'text-[#1B3A2D]' : 'text-[#F7F2E9]'}`}>
-            PetCare
-          </span>
+          <span className={`text-xl font-[family-name:var(--font-playfair)] font-bold transition-colors duration-300 ${scrolled ? 'text-[#1B3A2D]' : 'text-[#F7F2E9]'}`}>PetCare</span>
         </a>
         <div className="hidden md:flex items-center gap-8">
           {links.map((l) => (
@@ -107,7 +232,7 @@ function Hero() {
       <div className="absolute bottom-1/4 -right-20 w-[400px] h-[400px] bg-[#2D5C43]/30 rounded-full blur-[100px] pointer-events-none" />
       <div className="relative z-10 max-w-6xl mx-auto px-6 py-32 w-full">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="text-left">
+          <AnimatedSection direction="left">
             <p className="text-[11px] font-medium uppercase tracking-[0.3em] text-[#C9A84C] mb-6">
               Cuidado premium para quienes lo son todo
             </p>
@@ -119,7 +244,7 @@ function Hero() {
               Ofrecemos un nivel de cuidado que tu compañero merece: personalizado, experto y con la misma dedicación que tú le darías.
             </p>
             <div className="flex flex-col sm:flex-row items-start gap-4">
-              <a href="#contacto" className="group px-8 py-4 rounded-full bg-[#C9A84C] text-white text-sm font-medium uppercase tracking-widest hover:bg-[#b4953f] transition-all duration-300 shadow-lg flex items-center gap-2">
+              <a href="#contacto" className="group px-8 py-4 rounded-full bg-[#C9A84C] text-white text-sm font-medium uppercase tracking-widest hover:bg-[#b4953f] transition-all duration-300 shadow-lg flex items-center gap-2 hover:-translate-y-0.5">
                 Reservar mi lugar
                 <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
               </a>
@@ -128,15 +253,17 @@ function Hero() {
                 <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
               </a>
             </div>
-          </div>
-          <div className="relative h-[400px] lg:h-[550px] hidden lg:flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-40 h-40 mx-auto mb-6 rounded-full bg-[#C9A84C]/10 border border-[#C9A84C]/20 flex items-center justify-center">
-                <Heart size={64} className="text-[#C9A84C]" />
+          </AnimatedSection>
+          <AnimatedSection direction="right" delay={200} className="hidden lg:block">
+            <div className="relative h-[400px] lg:h-[550px] flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-40 h-40 mx-auto mb-6 rounded-full bg-[#C9A84C]/10 border border-[#C9A84C]/20 flex items-center justify-center animate-pulse">
+                  <Heart size={64} className="text-[#C9A84C]" />
+                </div>
+                <p className="text-[#F7F2E9]/60 text-sm">Experiencia 3D próximamente</p>
               </div>
-              <p className="text-[#F7F2E9]/60 text-sm">Experiencia 3D próximamente</p>
             </div>
-          </div>
+          </AnimatedSection>
         </div>
       </div>
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
@@ -160,14 +287,14 @@ function TrustBar() {
   ];
   return (
     <section className="bg-white border-b border-[#1B3A2D]/10">
-      <div className="max-w-6xl mx-auto px-6 py-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
+      <StaggerContainer className="max-w-6xl mx-auto px-6 py-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-4" staggerDelay={80}>
         {items.map((item, idx) => (
           <div key={idx} className="flex items-center gap-2 text-sm text-[#3D3D3D]">
             <span className="text-[#C9A84C]">{item.icon}</span>
             <span>{item.text}</span>
           </div>
         ))}
-      </div>
+      </StaggerContainer>
     </section>
   );
 }
@@ -180,11 +307,13 @@ function SobreNosotros() {
     <section id="nosotros" className="py-20 md:py-28 bg-[#F7F2E9]">
       <div className="max-w-6xl mx-auto px-6">
         <div className="grid md:grid-cols-2 gap-12 items-center">
-          <div className="relative rounded-2xl overflow-hidden aspect-[4/3] group">
-            <img src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=80" alt="Cuidador con mascota" className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#1B3A2D]/30 to-transparent" />
-          </div>
-          <div>
+          <AnimatedSection direction="left">
+            <div className="relative rounded-2xl overflow-hidden aspect-[4/3] group">
+              <img src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=80" alt="Cuidador con mascota" className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-105" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#1B3A2D]/30 to-transparent" />
+            </div>
+          </AnimatedSection>
+          <AnimatedSection direction="right" delay={150}>
             <p className="text-[11px] font-medium uppercase tracking-[0.3em] text-[#C9A84C] mb-3">Nuestra Historia</p>
             <h2 className="font-[family-name:var(--font-playfair)] text-[clamp(1.6rem,3vw,2.2rem)] text-[#1B3A2D] mb-4 leading-snug">
               Nació de un amor genuino. Creció por la confianza de familias como la tuya.
@@ -194,7 +323,7 @@ function SobreNosotros() {
               <p>PetCare nació para cambiar eso. Creamos un espacio donde cada mascota recibe atención individual, cuidado experto y todo el amor que merece — exactamente como tú lo harías.</p>
               <p>No somos una guardería masiva. Somos un equipo pequeño, apasionado y altamente preparado, comprometido con un solo estándar: el más alto posible.</p>
             </div>
-          </div>
+          </AnimatedSection>
         </div>
       </div>
     </section>
@@ -213,7 +342,7 @@ function Servicios() {
   return (
     <section id="servicios" className="py-20 md:py-28 bg-white">
       <div className="max-w-6xl mx-auto px-6">
-        <div className="text-center mb-14">
+        <AnimatedSection className="text-center mb-14">
           <p className="text-[11px] font-medium uppercase tracking-[0.3em] text-[#C9A84C] mb-3">Lo que ofrecemos</p>
           <h2 className="font-[family-name:var(--font-playfair)] text-[clamp(1.6rem,3vw,2.2rem)] text-[#1B3A2D] mb-4">
             Cada servicio, diseñado para el bienestar real de tu compañero.
@@ -221,8 +350,8 @@ function Servicios() {
           <p className="text-[15px] text-[#8A8A8A] max-w-xl mx-auto">
             No ofrecemos paquetes estándar. Cada experiencia se adapta a la personalidad, necesidades y rutina específica de tu mascota.
           </p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-6">
+        </AnimatedSection>
+        <StaggerContainer className="grid md:grid-cols-3 gap-6" staggerDelay={120}>
           {services.map((s, idx) => (
             <div key={idx} className={`relative p-8 rounded-xl border transition-all duration-500 hover:-translate-y-2 hover:shadow-xl group ${s.featured ? 'border-[#C9A84C] bg-[#F7F2E9]' : 'border-[#1B3A2D]/8 bg-white hover:border-[#C9A84C]/30'}`}>
               {s.featured && (
@@ -238,7 +367,7 @@ function Servicios() {
               </a>
             </div>
           ))}
-        </div>
+        </StaggerContainer>
       </div>
     </section>
   );
@@ -258,14 +387,14 @@ function Proceso() {
     <section id="proceso" className="py-20 md:py-28 bg-[#1B3A2D] relative overflow-hidden">
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#C9A84C]/5 rounded-full blur-[120px] pointer-events-none" />
       <div className="max-w-6xl mx-auto px-6 relative z-10">
-        <div className="text-center mb-14">
+        <AnimatedSection className="text-center mb-14">
           <p className="text-[11px] font-medium uppercase tracking-[0.3em] text-[#C9A84C] mb-3">Cómo funciona</p>
           <h2 className="font-[family-name:var(--font-playfair)] text-[clamp(1.6rem,3vw,2.2rem)] text-[#F7F2E9] mb-4">
             Empezar es simple. La calidad, no tanto de encontrar.
           </h2>
           <p className="text-[15px] text-[#F7F2E9]/70 max-w-xl mx-auto">En cuatro pasos, tu mascota está en las mejores manos.</p>
-        </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        </AnimatedSection>
+        <StaggerContainer className="grid md:grid-cols-2 lg:grid-cols-4 gap-6" staggerDelay={150}>
           {steps.map((step, idx) => (
             <div key={idx} className="bg-[#F7F2E9] rounded-xl p-6 flex flex-col hover:-translate-y-1 transition-transform duration-300">
               <div className="w-10 h-10 rounded-full bg-[#1B3A2D] text-[#F7F2E9] flex items-center justify-center font-[family-name:var(--font-playfair)] text-lg mb-4 shadow-lg">{step.num}</div>
@@ -273,7 +402,7 @@ function Proceso() {
               <p className="text-sm text-[#8A8A8A] leading-relaxed">{step.desc}</p>
             </div>
           ))}
-        </div>
+        </StaggerContainer>
       </div>
     </section>
   );
@@ -291,7 +420,7 @@ function Testimonios() {
   return (
     <section id="testimonios" className="py-20 md:py-28 bg-[#F7F2E9]">
       <div className="max-w-6xl mx-auto px-6">
-        <div className="text-center mb-14">
+        <AnimatedSection className="text-center mb-14">
           <p className="text-[11px] font-medium uppercase tracking-[0.3em] text-[#C9A84C] mb-3">Testimonios</p>
           <h2 className="font-[family-name:var(--font-playfair)] text-[clamp(1.6rem,3vw,2.2rem)] text-[#1B3A2D] mb-4">
             Lo que dicen las familias que ya confiaron en nosotros.
@@ -299,8 +428,8 @@ function Testimonios() {
           <p className="text-[15px] text-[#8A8A8A] max-w-xl mx-auto">
             No te pedimos que confíes en nuestra palabra. Te pedimos que escuches a quienes ya lo hicieron.
           </p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-6">
+        </AnimatedSection>
+        <StaggerContainer className="grid md:grid-cols-3 gap-6" staggerDelay={120}>
           {testimonials.map((t, idx) => (
             <div key={idx} className="bg-white rounded-xl p-8 border-l-[3px] border-[#C97A5A] hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
               <div className="flex gap-1 mb-4">
@@ -310,7 +439,7 @@ function Testimonios() {
               <p className="text-sm text-[#8A8A8A]">— <strong className="text-[#3D3D3D]">{t.name}</strong>, {t.pet}</p>
             </div>
           ))}
-        </div>
+        </StaggerContainer>
       </div>
     </section>
   );
@@ -328,16 +457,14 @@ function Stats() {
   ];
   return (
     <section className="py-16 bg-white border-y border-[#1B3A2D]/10">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          {stats.map((s, idx) => (
-            <div key={idx}>
-              <p className="font-[family-name:var(--font-playfair)] text-[clamp(2rem,4vw,3rem)] text-[#C9A84C] leading-none mb-2">{s.value}</p>
-              <p className="text-sm text-[#8A8A8A]">{s.label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+      <StaggerContainer className="max-w-6xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center" staggerDelay={100}>
+        {stats.map((s, idx) => (
+          <div key={idx}>
+            <p className="font-[family-name:var(--font-playfair)] text-[clamp(2rem,4vw,3rem)] text-[#C9A84C] leading-none mb-2">{s.value}</p>
+            <p className="text-sm text-[#8A8A8A]">{s.label}</p>
+          </div>
+        ))}
+      </StaggerContainer>
     </section>
   );
 }
@@ -357,12 +484,12 @@ function Galeria() {
   return (
     <section id="galeria" className="py-20 md:py-28 bg-[#F7F2E9]">
       <div className="max-w-6xl mx-auto px-6">
-        <div className="text-center mb-14">
+        <AnimatedSection className="text-center mb-14">
           <p className="text-[11px] font-medium uppercase tracking-[0.3em] text-[#C9A84C] mb-3">Galería</p>
           <h2 className="font-[family-name:var(--font-playfair)] text-[clamp(1.6rem,3vw,2.2rem)] text-[#1B3A2D] mb-4">Momentos reales, cuidados reales.</h2>
           <p className="text-[15px] text-[#8A8A8A] max-w-xl mx-auto">Las fotos más poderosas son las que muestran lo que vivimos cada día.</p>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 auto-rows-[180px]">
+        </AnimatedSection>
+        <StaggerContainer className="grid grid-cols-2 md:grid-cols-3 gap-4 auto-rows-[180px]" staggerDelay={80}>
           {images.map((img, idx) => (
             <div key={idx} className={`group relative rounded-xl overflow-hidden cursor-pointer ${img.span}`}>
               <img src={img.src} alt={`Galería ${idx + 1}`} className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110" loading="lazy" />
@@ -371,7 +498,7 @@ function Galeria() {
               </div>
             </div>
           ))}
-        </div>
+        </StaggerContainer>
         <div className="text-center mt-10">
           <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-[#C9A84C] hover:text-[#b4953f] transition-colors">
             <IconInstagram size={18} /> Ver más en Instagram
@@ -398,21 +525,23 @@ function FAQ() {
   return (
     <section className="py-20 md:py-28 bg-white">
       <div className="max-w-3xl mx-auto px-6">
-        <div className="text-center mb-14">
+        <AnimatedSection className="text-center mb-14">
           <p className="text-[11px] font-medium uppercase tracking-[0.3em] text-[#C9A84C] mb-3">Preguntas frecuentes</p>
           <h2 className="font-[family-name:var(--font-playfair)] text-[clamp(1.6rem,3vw,2.2rem)] text-[#1B3A2D]">Todo lo que necesitás saber.</h2>
-        </div>
+        </AnimatedSection>
         <div className="space-y-4">
           {faqs.map((faq, idx) => (
-            <div key={idx} className="border border-[#1B3A2D]/10 rounded-xl overflow-hidden hover:border-[#C9A84C]/30 transition-colors">
-              <button onClick={() => setOpenIndex(openIndex === idx ? null : idx)} className="w-full flex items-center justify-between p-5 text-left hover:bg-[#F7F2E9]/50 transition-colors">
-                <span className="text-[15px] font-medium text-[#1B3A2D] pr-4">{faq.q}</span>
-                <ChevronDown size={18} className={`text-[#C9A84C] shrink-0 transition-transform duration-300 ${openIndex === idx ? 'rotate-180' : ''}`} />
-              </button>
-              <div className={`overflow-hidden transition-all duration-300 ${openIndex === idx ? 'max-h-48' : 'max-h-0'}`}>
-                <div className="px-5 pb-5 text-sm text-[#3D3D3D] leading-relaxed">{faq.a}</div>
+            <AnimatedSection key={idx} delay={idx * 80}>
+              <div className="border border-[#1B3A2D]/10 rounded-xl overflow-hidden hover:border-[#C9A84C]/30 transition-colors">
+                <button onClick={() => setOpenIndex(openIndex === idx ? null : idx)} className="w-full flex items-center justify-between p-5 text-left hover:bg-[#F7F2E9]/50 transition-colors">
+                  <span className="text-[15px] font-medium text-[#1B3A2D] pr-4">{faq.q}</span>
+                  <ChevronDown size={18} className={`text-[#C9A84C] shrink-0 transition-transform duration-300 ${openIndex === idx ? 'rotate-180' : ''}`} />
+                </button>
+                <div className={`overflow-hidden transition-all duration-300 ${openIndex === idx ? 'max-h-48' : 'max-h-0'}`}>
+                  <div className="px-5 pb-5 text-sm text-[#3D3D3D] leading-relaxed">{faq.a}</div>
+                </div>
               </div>
-            </div>
+            </AnimatedSection>
           ))}
         </div>
       </div>
@@ -427,7 +556,7 @@ function CTAFinal() {
   return (
     <section id="contacto" className="py-20 md:py-28 bg-[#1B3A2D] relative overflow-hidden">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#C9A84C]/5 rounded-full blur-[150px] pointer-events-none" />
-      <div className="max-w-3xl mx-auto px-6 text-center relative z-10">
+      <AnimatedSection className="max-w-3xl mx-auto px-6 text-center relative z-10">
         <h2 className="font-[family-name:var(--font-playfair)] text-[clamp(1.6rem,3vw,2.2rem)] text-[#F7F2E9] mb-4">
           "El primer paso es el más fácil. Lo que sigue, nos encargamos nosotros."
         </h2>
@@ -443,7 +572,7 @@ function CTAFinal() {
             💡 <strong className="text-[#F7F2E9]">Disponibilidad limitada para nuevas familias este mes.</strong> Asegurá el tuyo.
           </p>
         </div>
-      </div>
+      </AnimatedSection>
     </section>
   );
 }
@@ -506,23 +635,28 @@ function WhatsAppFloat() {
    PÁGINA PRINCIPAL
 ========================================= */
 export default function PetCareWebsite() {
+  const [loaded, setLoaded] = useState(false);
+
   return (
     <>
-      <Navbar />
-      <main>
-        <Hero />
-        <TrustBar />
-        <SobreNosotros />
-        <Servicios />
-        <Proceso />
-        <Testimonios />
-        <Stats />
-        <Galeria />
-        <FAQ />
-        <CTAFinal />
-      </main>
-      <Footer />
-      <WhatsAppFloat />
+      {!loaded && <PageLoader onDone={() => setLoaded(true)} />}
+      {<>
+        <Navbar />
+        <main>
+          <Hero />
+          <TrustBar />
+          <SobreNosotros />
+          <Servicios />
+          <Proceso />
+          <Testimonios />
+          <Stats />
+          <Galeria />
+          <FAQ />
+          <CTAFinal />
+        </main>
+        <Footer />
+        <WhatsAppFloat />
+      </>}
     </>
   );
 }
