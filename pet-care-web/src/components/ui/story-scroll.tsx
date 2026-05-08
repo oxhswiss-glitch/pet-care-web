@@ -5,7 +5,9 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
 
-gsap.registerPlugin(ScrollTrigger);
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 function cx(...parts: Array<string | undefined | false | null>): string {
   return parts.filter(Boolean).join(' ');
@@ -48,8 +50,6 @@ export interface FlowArtProps {
   'aria-label'?: string;
 }
 
-const childCount = (children: React.ReactNode) => React.Children.count(children);
-
 const FlowArt: React.FC<FlowArtProps> = ({
   children,
   className,
@@ -59,6 +59,7 @@ const FlowArt: React.FC<FlowArtProps> = ({
   const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
     const update = () => setReducedMotion(mq.matches);
     update();
@@ -117,7 +118,7 @@ const FlowArt: React.FC<FlowArtProps> = ({
         triggers.forEach((t) => t.kill());
       };
     },
-    { scope: containerRef, dependencies: [childCount(children), reducedMotion] },
+    { scope: containerRef, dependencies: [children, reducedMotion] },
   );
 
   return (
