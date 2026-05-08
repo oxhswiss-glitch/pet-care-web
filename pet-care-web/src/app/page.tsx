@@ -2,18 +2,23 @@
 
 import React from 'react';
 import FlowArt, { FlowSection } from '@/components/ui/story-scroll';
+import Scene3D from '@/components/ui/Scene3D';
 import { PawPrint, Heart, Calendar, ShieldCheck, Star, MessageSquare, Sparkles, ArrowRight } from 'lucide-react';
 
 export default function PetCareWebsite() {
   return (
     <FlowArt aria-label="Experiencia de Lujo en Cuidado de Mascotas">
-      {/* SECCIÓN 01: HERO - La Primera Impresión */}
+      {/* SECCIÓN 01: HERO - The First Impression with 3D */}
       <FlowSection
         aria-label="Inicio"
         style={{ backgroundColor: '#F9FAFB', color: '#1E1B4B' }}
         className="flex items-center justify-center"
       >
-        <div className="flex flex-col items-center text-center">
+        <div className="absolute inset-0 z-0 opacity-60">
+          <Scene3D />
+        </div>
+
+        <div className="relative z-10 flex flex-col items-center text-center">
           <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-indigo-500 mb-4 flex items-center gap-2">
             <Sparkles size={12} /> Excelencia en Cuidado Animal
           </p>
@@ -25,7 +30,6 @@ export default function PetCareWebsite() {
               <br />
               <span className="text-indigo-600">Pura</span>
             </h1>
-            {/* Elemento decorativo de Glassmorphism */}
             <div className="absolute -top-10 -right-10 w-64 h-64 bg-indigo-200 rounded-full blur-3xl opacity-30 animate-pulse"></div>
           </div>
 
@@ -43,7 +47,7 @@ export default function PetCareWebsite() {
         </div>
       </FlowSection>
 
-      {/* SECCIÓN 02: SERVICIOS - La Oferta Exclusiva */}
+      {/* SECCIÓN 02: SERVICIOS - The Bespoke Offer */}
       <FlowSection
         aria-label="Nuestros Servicios"
         style={{ backgroundColor: '#1E1B4B', color: '#F9FAFB' }}
