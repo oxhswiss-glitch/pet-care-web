@@ -503,6 +503,40 @@ function Galeria() {
 }
 
 /* =========================================
+   VIDEO SECTION
+========================================= */
+function VideoSection() {
+  return (
+    <section id="video" className="py-20 md:py-28 bg-white">
+      <div className="max-w-5xl mx-auto px-6">
+        <MotionSection className="text-center mb-14">
+          <p className="text-[11px] font-medium uppercase tracking-[0.3em] text-[#C9A84C] mb-3">Conócenos</p>
+          <h2 className="font-[family-name:var(--font-playfair)] text-[clamp(1.6rem,3vw,2.2rem)] text-[#1B3A2D] mb-4">
+            Descubrí lo que nos hace diferentes.
+          </h2>
+          <p className="text-[15px] text-[#8A8A8A] max-w-xl mx-auto">
+            Un vistazo a nuestra pasión por el cuidado profesional de mascotas.
+          </p>
+        </MotionSection>
+        <MotionSection>
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-[#1B3A2D]/10 aspect-video">
+            <video
+              src="/videos/promo-video.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-full h-full object-cover"
+              poster="/videos/logo-reveal.mp4"
+            />
+          </div>
+        </MotionSection>
+      </div>
+    </section>
+  );
+}
+
+/* =========================================
    FAQ
 ========================================= */
 function FAQ() {
@@ -672,6 +706,7 @@ export default function PetCareWebsite() {
           <Testimonios />
           <Stats />
           <Galeria />
+          <VideoSection />
           <FAQ />
           <CTAFinal />
         </main>
