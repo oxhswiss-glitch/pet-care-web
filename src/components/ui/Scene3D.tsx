@@ -22,13 +22,9 @@ export default function Scene3D() {
         </div>
       }
     >
-      <div className="w-full h-full">
+      <div className="w-full h-full min-h-96">
         <Spline
-          scene="https://prod.spline.design/0L2N0bnRQAO5WLd1/scene.splinecode"
-          style={{
-            width: '100%',
-            height: '100%',
-          }}
+          scene="https://prod.spline.design/A61eUfIhm0qHJbhQ/scene.splinecode"
         />
       </div>
     </Suspense>
