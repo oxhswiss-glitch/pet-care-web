@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import FlowArt, { FlowSection } from './components/ui/story-scroll';
+import FlowArt, { FlowSection } from '../components/ui/story-scroll';
 import { PawPrint, Heart, Calendar, ShieldCheck, Star, MessageSquare } from 'lucide-react';
 
 export default function PetCareWebsite() {
