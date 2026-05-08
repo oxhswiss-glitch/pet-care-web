@@ -50,33 +50,28 @@ function IconDoorOpen({ size = 28 }: { size?: number }) {
 ========================================= */
 function PageLoader({ onDone }: { onDone: () => void }) {
   const [progress, setProgress] = useState(0);
-  const loaderRef = useRef<HTMLDivElement>(null);
+  const [hiding, setHiding] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setProgress((p) => {
         if (p >= 100) {
           clearInterval(interval);
-          setTimeout(() => {
-            gsap.to(loaderRef.current, {
-              opacity: 0,
-              duration: 0.6,
-              ease: 'power2.inOut',
-              onComplete: onDone,
-            });
-          }, 300);
+          setTimeout(() => setHiding(true), 200);
+          setTimeout(() => onDone(), 800);
           return 100;
         }
-        return p + Math.random() * 15 + 5;
+        return Math.min(p + Math.random() * 18 + 6, 100);
       });
-    }, 120);
+    }, 100);
     return () => clearInterval(interval);
   }, [onDone]);
 
   return (
     <div
-      ref={loaderRef}
-      className="fixed inset-0 z-[100] bg-[#1B3A2D] flex flex-col items-center justify-center"
+      className={`fixed inset-0 z-[100] bg-[#1B3A2D] flex flex-col items-center justify-center transition-opacity duration-700 ease-out ${
+        hiding ? 'opacity-0 pointer-events-none' : 'opacity-100'
+      }`}
     >
       <div className="font-[family-name:var(--font-playfair)] text-3xl text-[#C9A84C] mb-6 tracking-wide">
         PetCare
