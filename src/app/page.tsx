@@ -527,7 +527,7 @@ function VideoSection() {
               loop
               playsInline
               className="w-full h-full object-cover"
-              poster="/videos/logo-reveal.mp4"
+              poster="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=1200&q=80"
             />
           </div>
         </MotionSection>
